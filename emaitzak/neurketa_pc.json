@@ -1,0 +1,45 @@
+{
+ "gailua": "Intel64 Family 6 Model 154 Stepping 3, GenuineIntel",
+ "ostalaria": "IAB109",
+ "sistema": "Windows-11-10.0.26300-SP0",
+ "python": "3.12.14",
+ "numpy": "2.5.3",
+ "tflite": false,
+ "neurketak": {
+  "Ridge, egun 1": {
+   "batezbestekoa_ms": 0.003856800056382781,
+   "mediana_ms": 0.0036999990697950125,
+   "p95_ms": 0.004300000000512227,
+   "max_ms": 0.020399998902576044,
+   "errepikapenak": 1000
+  },
+  "Ridge, 306 egun (lotea)": {
+   "batezbestekoa_ms": 0.8286360001511639,
+   "mediana_ms": 0.7945000015752157,
+   "p95_ms": 0.9770250000656233,
+   "max_ms": 1.3668999999936204,
+   "errepikapenak": 100
+  },
+  "K-means, egun 1": {
+   "batezbestekoa_ms": 0.0069795000163139775,
+   "mediana_ms": 0.006599999323952943,
+   "p95_ms": 0.007099999493220821,
+   "max_ms": 0.07729999924777076,
+   "errepikapenak": 1000
+  },
+  "Sistema aditua, egun 1": {
+   "batezbestekoa_ms": 0.01317289995131432,
+   "mediana_ms": 0.012799999240087345,
+   "p95_ms": 0.014299999747890979,
+   "max_ms": 0.04609999814420007,
+   "errepikapenak": 1000
+  },
+  "Kate osoa, egun 1": {
+   "batezbestekoa_ms": 0.026767299917992204,
+   "mediana_ms": 0.025800000003073364,
+   "p95_ms": 0.030499999593303073,
+   "max_ms": 0.1506000007793773,
+   "errepikapenak": 1000
+  }
+ }
+}
