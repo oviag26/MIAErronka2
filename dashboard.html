@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="eu">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mundakako aire-monitorea</title>
+<style>
+:root {
+  color-scheme: light;
+  --surface-0: #f4f3ef;
+  --surface-1: #fcfcfb;
+  --border: #e3e2dc;
+  --grid: #ebeae5;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #7a7974;
+  --series-1: #2a78d6;  /* PM10 neurtua */
+  --series-2: #eb6834;  /* PM10 kalkulatua */
+  --series-3: #1baf7a;
+  --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+  --accent: #2a78d6;
+}
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    color-scheme: dark;
+    --surface-0: #121211; --surface-1: #1a1a19; --border: #2e2e2c; --grid: #262624;
+    --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --accent: #3987e5;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface-0: #121211; --surface-1: #1a1a19; --border: #2e2e2c; --grid: #262624;
+  --text-primary: #f0efec; --text-secondary: #c3c2b7; --text-muted: #8f8e86;
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70; --accent: #3987e5;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--surface-0); color: var(--text-primary);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.wrap { max-width: 1240px; margin: 0 auto; padding: 20px 16px 32px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; }
+h1 { font-size: 20px; margin: 0; font-weight: 650; letter-spacing: -0.01em; }
+.sub { color: var(--text-secondary); margin: 2px 0 0; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 16px 0; }
+button, select { font: inherit; color: var(--text-primary); background: var(--surface-1);
+  border: 1px solid var(--border); border-radius: 8px; padding: 6px 12px; cursor: pointer; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button[aria-pressed="true"] { border-color: var(--critical); color: var(--critical); }
+label.ctl { color: var(--text-secondary); display: inline-flex; gap: 6px; align-items: center; }
+.status { color: var(--text-muted); font-size: 13px; margin-left: auto; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; min-width: 0; }
+.tile .k { color: var(--text-secondary); font-size: 12px; }
+.tile .v { font-size: 24px; font-weight: 650; font-variant-numeric: tabular-nums; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile .v.small { font-size: 16px; padding-top: 6px; white-space: normal; line-height: 1.25; }
+.tile .n { color: var(--text-muted); font-size: 12px; margin-top: 2px; }
+.badge { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+.grid2 { display: grid; grid-template-columns: 2fr 1fr; gap: 10px; margin-top: 10px; }
+@media (max-width: 860px) { .grid2 { grid-template-columns: 1fr; } }
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 14px; min-width: 0; }
+.card h2 { font-size: 14px; margin: 0 0 8px; font-weight: 600; }
+.legend { display: flex; gap: 16px; color: var(--text-secondary); font-size: 12px; flex-wrap: wrap; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.swatch { width: 14px; height: 2px; display: inline-block; }
+.chart { position: relative; height: 280px; margin-top: 6px; }
+canvas { width: 100%; height: 100%; display: block; }
+.tip { position: absolute; pointer-events: none; background: var(--surface-1); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 9px; font-size: 12px; box-shadow: 0 4px 14px rgba(0,0,0,.12); display: none; white-space: nowrap; }
+.tip b { font-weight: 600; }
+.alerts { list-style: none; margin: 0; padding: 0; max-height: 330px; overflow-y: auto; }
+.alerts li { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; padding: 8px 0; border-top: 1px solid var(--grid); }
+.alerts li:first-child { border-top: 0; }
+.alerts .ic { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; font-weight: 700; font-size: 13px; color: #fff; grid-row: span 2; }
+.alerts .t { font-size: 13px; }
+.alerts .m { color: var(--text-muted); font-size: 12px; }
+.empty { color: var(--text-muted); font-size: 13px; padding: 8px 0; }
+table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+td, th { text-align: left; padding: 5px 0; border-top: 1px solid var(--grid); font-size: 13px; }
+th { color: var(--text-secondary); font-weight: 500; border-top: 0; font-size: 12px; }
+td.num, th.num { text-align: right; }
+.strip { display: flex; gap: 2px; height: 22px; margin: 8px 0 6px; }
+.strip div { flex: 1; border-radius: 2px; min-width: 2px; }
+.err { color: var(--critical); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Smart Environment AI · Mundakako airearen kalitatea</h1>
+      <p class="sub">NexAI Innovations · Bizkaiko Foru Aldundia · inferentzia gailuan bertan (Ridge + K-means + sistema aditua)</p>
+    </div>
+  </header>
+
+  <div class="controls">
+    <button id="play" class="primary">⏸ Gelditu</button>
+    <button id="reset">↺ Hasieratik</button>
+    <label class="ctl">Abiadura
+      <select id="speed">
+        <option value="2000">Egun 1 / 2 s</option>
+        <option value="1000" selected>Egun 1 / 1 s</option>
+        <option value="400">Egun 1 / 0,4 s</option>
+        <option value="100">Egun 1 / 0,1 s</option>
+      </select>
+    </label>
+    <button id="episode" aria-pressed="false" title="Neurketak biderkatzen ditu alertak nola sortzen diren erakusteko">⚠ Kutsadura-episodioa simulatu</button>
+    <span class="status" id="status">Konektatzen…</span>
+  </div>
+
+  <section class="tiles" aria-label="Uneko egoera">
+    <div class="tile"><div class="k">Data</div><div class="v small" id="t-date">–</div><div class="n" id="t-day">–</div></div>
+    <div class="tile"><div class="k">PM10 neurtua (µg/m³)</div><div class="v" id="t-meas">–</div><div class="n" id="t-meas-n">&nbsp;</div></div>
+    <div class="tile"><div class="k">PM10 kalkulatua · Ridge</div><div class="v" id="t-pred">–</div><div class="n" id="t-pred-n">&nbsp;</div></div>
+    <div class="tile"><div class="k">Kalitatea (ICA, PM10)</div><div class="v small" id="t-cat">–</div><div class="n">MITECO indizea</div></div>
+    <div class="tile"><div class="k">Egun-mota · K-means</div><div class="v small" id="t-clu">–</div><div class="n" id="t-clu-n">&nbsp;</div></div>
+    <div class="tile"><div class="k">Arrisku lausoa (0-100)</div><div class="v" id="t-risk">–</div><div class="n" id="t-risk-n">&nbsp;</div></div>
+    <div class="tile"><div class="k">Inferentzia-denbora</div><div class="v" id="t-ms">–</div><div class="n">kate osoa, egun bakoitzeko</div></div>
+  </section>
+
+  <div class="grid2">
+    <section class="card">
+      <h2>PM10: neurtua eta kalkulatua (azken 60 egunak)</h2>
+      <div class="legend">
+        <span><i class="swatch" style="background:var(--series-1)"></i>Neurtua</span>
+        <span><i class="swatch" style="background:var(--series-2)"></i>Kalkulatua (Ridge)</span>
+        <span><i class="swatch" style="background:var(--text-muted);height:1px"></i>OME muga (45)</span>
+      </div>
+      <div class="chart" id="chart">
+        <canvas id="cv" role="img" aria-label="PM10 neurtua eta kalkulatua denboran zehar"></canvas>
+        <div class="tip" id="tip"></div>
+      </div>
+      <h2 style="margin-top:14px">Egun-motak (K-means klusterrak)</h2>
+      <div class="strip" id="strip" aria-label="Azken egunetako klusterrak"></div>
+      <div class="legend" id="clu-legend"></div>
+    </section>
+
+    <div style="display:grid;gap:10px;align-content:start;min-width:0">
+      <section class="card">
+        <h2>Sistema adituaren alertak</h2>
+        <ul class="alerts" id="alerts"><li class="empty">Oraindik ez dago alertarik.</li></ul>
+      </section>
+      <section class="card">
+        <h2>Uneko neurketak (µg/m³)</h2>
+        <table>
+          <thead><tr><th>Kutsatzailea</th><th class="num">Balioa</th><th class="num">OME muga</th></tr></thead>
+          <tbody id="meas"></tbody>
+        </table>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var MAILA = {
+    INFO:   { kolorea: 'var(--accent)',   ikurra: 'i', izena: 'Info' },
+    ABISUA: { kolorea: 'var(--serious)',  ikurra: '!', izena: 'Abisua' },
+    ALERTA: { kolorea: 'var(--critical)', ikurra: '‼', izena: 'Alerta' }
+  };
+  var ICA = {
+    'Ona': ['var(--good)', '✓'], 'Nahiko ona': ['var(--good)', '✓'], 'Erregularra': ['var(--warning)', '!'],
+    'Txarra': ['var(--serious)', '!'], 'Oso txarra': ['var(--critical)', '‼'], 'Muturrekoa': ['var(--critical)', '‼']
+  };
+  var RISK = { baxua: 'var(--good)', ertaina: 'var(--warning)', altua: 'var(--critical)' };
+  var CLU = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)'];
+  var OME = { NO2: 25, O3: 100, PM10: 45 };
+  var ASTEA = ['Igandea', 'Astelehena', 'Asteartea', 'Asteazkena', 'Osteguna', 'Ostirala', 'Larunbata'];
+
+  var st = { i: 0, playing: true, speed: 1000, scenario: 'normala', hist: [], alerts: [], n: 306, timer: null, hover: -1 };
+  var $ = function (id) { return document.getElementById(id); };
+  var fmt = function (v, d) { return v === null || v === undefined ? '–' : Number(v).toFixed(d === undefined ? 1 : d).replace('.', ','); };
+  function css(v) { return getComputedStyle(document.documentElement).getPropertyValue(v.replace(/var\((.*)\)/, '$1')).trim(); }
+
+  function schedule() { clearTimeout(st.timer); if (st.playing) st.timer = setTimeout(tick, st.speed); }
+
+  function tick() {
+    fetch('/api/eguna?i=' + st.i + '&eszenatokia=' + st.scenario)
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.i === 0 && st.hist.length) { st.hist = []; st.alerts = []; }
+        st.hist.push(d); if (st.hist.length > 60) st.hist.shift();
+        d.alertak.forEach(function (a) { if (a.maila !== 'INFO' || st.alerts.length < 3) st.alerts.unshift({ a: a, data: d.data, esz: d.eszenatokia }); });
+        st.alerts = st.alerts.slice(0, 40);
+        st.i = (d.i + 1) % st.n;
+        render(d);
+        $('status').textContent = 'Egun ' + (d.i + 1) + ' / ' + st.n + (d.eszenatokia === 'episodioa' ? ' · episodio simulatua' : '');
+        $('status').className = 'status';
+        schedule();
+      })
+      .catch(function () {
+        $('status').textContent = 'Ezin da zerbitzariarekin konektatu (python3 dashboard.py martxan al dago?)';
+        $('status').className = 'status err';
+        st.timer = setTimeout(tick, 3000);
+      });
+  }
+
+  function render(d) {
+    var dt = new Date(d.data + 'T12:00:00');
+    $('t-date').textContent = d.data;
+    $('t-day').textContent = ASTEA[dt.getDay()];
+    var m = d.neurketak.PM10;
+    $('t-meas').textContent = fmt(m, 0);
+    $('t-meas-n').textContent = m === null ? 'neurgailuak ez du daturik eman' : 'neurgailua';
+    $('t-pred').textContent = fmt(d.pm10_iragarria);
+    $('t-pred-n').textContent = d.pm10_estimatua ? 'estimazioa erabiltzen da' : (m !== null ? 'aldea: ' + fmt(m - d.pm10_iragarria) : '');
+    var c = ICA[d.kategoria] || ['var(--text-muted)', '?'];
+    $('t-cat').innerHTML = '<span class="badge"><i class="dot" style="background:' + c[0] + '"></i>' + c[1] + ' ' + d.kategoria + '</span>';
+    $('t-clu').innerHTML = '<span class="badge"><i class="dot" style="background:' + CLU[d.klusterra] + '"></i>' + d.kluster_izena + '</span>';
+    $('t-clu-n').textContent = 'klusterra ' + d.klusterra;
+    $('t-risk').textContent = fmt(d.arriskua.indizea);
+    $('t-risk-n').innerHTML = '<span class="badge"><i class="dot" style="background:' + RISK[d.arriskua.etiketa] + '"></i>' + d.arriskua.etiketa + '</span>';
+    $('t-ms').textContent = fmt(d.inferentzia_ms, 3) + ' ms';
+
+    var rows = '';
+    ['NO', 'NOX', 'NO2', 'O3', 'PM10', 'PM2,5'].forEach(function (k) {
+      var v = d.neurketak[k], lim = OME[k], over = lim && v !== null && v > lim;
+      rows += '<tr><td>' + k + '</td><td class="num">' + (over ? '<span style="color:var(--critical)">‼ </span>' : '') + fmt(v) +
+        '</td><td class="num" style="color:var(--text-muted)">' + (lim || '–') + '</td></tr>';
+    });
+    $('meas').innerHTML = rows;
+
+    if (!st.alerts.length) $('alerts').innerHTML = '<li class="empty">Oraindik ez dago alertarik.</li>';
+    else $('alerts').innerHTML = st.alerts.map(function (x) {
+      var mm = MAILA[x.a.maila];
+      return '<li><span class="ic" style="background:' + mm.kolorea + '" aria-label="' + mm.izena + '">' + mm.ikurra + '</span>' +
+        '<span class="t">' + x.a.testua + '</span><span class="m">' + x.data + ' · ' + mm.izena + ' · ' + x.a.araua +
+        (x.esz === 'episodioa' ? ' · simulatua' : '') + '</span></li>';
+    }).join('');
+
+    $('strip').innerHTML = st.hist.map(function (h) {
+      return '<div style="background:' + CLU[h.klusterra] + '" title="' + h.data + ': ' + h.kluster_izena + '"></div>';
+    }).join('');
+    draw();
+  }
+
+  function draw() {
+    var cv = $('cv'), box = $('chart'), dpr = window.devicePixelRatio || 1;
+    var W = box.clientWidth, H = box.clientHeight;
+    cv.width = W * dpr; cv.height = H * dpr;
+    var g = cv.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+    var P = { l: 34, r: 10, t: 10, b: 24 }, h = st.hist;
+    var maxV = 50;
+    h.forEach(function (d) { maxV = Math.max(maxV, d.neurketak.PM10 || 0, d.pm10_iragarria); });
+    maxV = Math.ceil(maxV / 10) * 10;
+    var x = function (i) { return P.l + (W - P.l - P.r) * (h.length > 1 ? i / 59 : 0); };
+    var y = function (v) { return P.t + (H - P.t - P.b) * (1 - v / maxV); };
+    g.font = '11px system-ui, sans-serif'; g.textBaseline = 'middle';
+    for (var v = 0; v <= maxV; v += 10) {
+      g.strokeStyle = css('var(--grid)'); g.lineWidth = 1; g.beginPath(); g.moveTo(P.l, y(v)); g.lineTo(W - P.r, y(v)); g.stroke();
+      g.fillStyle = css('var(--text-muted)'); g.textAlign = 'right'; g.fillText(v, P.l - 6, y(v));
+    }
+    g.setLineDash([4, 4]); g.strokeStyle = css('var(--text-muted)'); g.beginPath(); g.moveTo(P.l, y(45)); g.lineTo(W - P.r, y(45)); g.stroke(); g.setLineDash([]);
+    g.textAlign = 'center'; g.fillStyle = css('var(--text-muted)');
+    h.forEach(function (d, i) { if (i % 10 === 0) g.fillText(d.data.slice(5), x(i), H - 10); });
+
+    function line(get, color) {
+      g.strokeStyle = color; g.lineWidth = 2; g.lineJoin = 'round'; g.beginPath();
+      var pen = false;
+      h.forEach(function (d, i) { var v = get(d); if (v === null) { pen = false; return; } if (!pen) { g.moveTo(x(i), y(v)); pen = true; } else g.lineTo(x(i), y(v)); });
+      g.stroke();
+    }
+    line(function (d) { return d.neurketak.PM10; }, css('var(--series-1)'));
+    line(function (d) { return d.pm10_iragarria; }, css('var(--series-2)'));
+    // Estimatutako egunak: puntu hutsak
+    h.forEach(function (d, i) {
+      if (d.pm10_estimatua) { g.fillStyle = css('var(--surface-1)'); g.strokeStyle = css('var(--series-2)'); g.lineWidth = 2;
+        g.beginPath(); g.arc(x(i), y(d.pm10_iragarria), 4, 0, 6.3); g.fill(); g.stroke(); }
+    });
+    var hi = st.hover;
+    if (hi >= 0 && hi < h.length) {
+      g.strokeStyle = css('var(--text-muted)'); g.lineWidth = 1; g.beginPath(); g.moveTo(x(hi), P.t); g.lineTo(x(hi), H - P.b); g.stroke();
+      [[h[hi].neurketak.PM10, '--series-1'], [h[hi].pm10_iragarria, '--series-2']].forEach(function (p) {
+        if (p[0] === null) return; g.fillStyle = css('var(' + p[1] + ')'); g.strokeStyle = css('var(--surface-1)'); g.lineWidth = 2;
+        g.beginPath(); g.arc(x(hi), y(p[0]), 4.5, 0, 6.3); g.fill(); g.stroke();
+      });
+    }
+    st._x = x; st._P = P; st._W = W;
+  }
+
+  $('chart').addEventListener('mousemove', function (e) {
+    var h = st.hist; if (!h.length || !st._x) return;
+    var r = this.getBoundingClientRect(), px = e.clientX - r.left;
+    var i = Math.round((px - st._P.l) / (st._W - st._P.l - st._P.r) * 59);
+    if (i < 0 || i >= h.length) { st.hover = -1; $('tip').style.display = 'none'; draw(); return; }
+    st.hover = i; draw();
+    var d = h[i], t = $('tip');
+    t.innerHTML = '<b>' + d.data + '</b><br>Neurtua: ' + fmt(d.neurketak.PM10, 0) + ' µg/m³<br>Kalkulatua: ' + fmt(d.pm10_iragarria) + ' µg/m³' +
+      (d.pm10_estimatua ? '<br><span style="color:var(--text-muted)">estimazioa erabilia</span>' : '');
+    t.style.display = 'block';
+    var left = st._x(i) + 12; if (left + t.offsetWidth > r.width) left = st._x(i) - t.offsetWidth - 12;
+    t.style.left = left + 'px'; t.style.top = '8px';
+  });
+  $('chart').addEventListener('mouseleave', function () { st.hover = -1; $('tip').style.display = 'none'; draw(); });
+
+  $('play').onclick = function () {
+    st.playing = !st.playing;
+    this.textContent = st.playing ? '⏸ Gelditu' : '▶ Jarraitu';
+    if (st.playing) tick(); else clearTimeout(st.timer);
+  };
+  $('reset').onclick = function () { st.i = 0; st.hist = []; st.alerts = []; clearTimeout(st.timer); tick(); };
+  $('speed').onchange = function () { st.speed = +this.value; schedule(); };
+  $('episode').onclick = function () {
+    st.scenario = st.scenario === 'normala' ? 'episodioa' : 'normala';
+    this.setAttribute('aria-pressed', st.scenario === 'episodioa');
+    this.textContent = st.scenario === 'episodioa' ? '✓ Episodioa aktibo (sakatu kentzeko)' : '⚠ Kutsadura-episodioa simulatu';
+  };
+  window.addEventListener('resize', draw);
+
+  fetch('/api/info').then(function (r) { return r.json(); }).then(function (info) {
+    st.n = info.egunak;
+    $('clu-legend').innerHTML = Object.keys(info.klusterrak).map(function (k) {
+      return '<span><i class="dot" style="background:' + CLU[+k] + '"></i>' + k + ' · ' + info.klusterrak[k] + '</span>';
+    }).join('');
+    tick();
+  }).catch(tick);
+})();
+</script>
+</body>
+</html>
