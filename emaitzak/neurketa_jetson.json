@@ -1,0 +1,45 @@
+{
+ "gailua": "NVIDIA Jetson Nano Developer Kit",
+ "ostalaria": "talde3-desktop",
+ "sistema": "Linux-4.9.337-tegra-aarch64-with-Ubuntu-18.04-bionic",
+ "python": "3.6.9",
+ "numpy": "1.19.5",
+ "tflite": false,
+ "neurketak": {
+  "Ridge, egun 1": {
+   "batezbestekoa_ms": 0.06681839399902856,
+   "mediana_ms": 0.06557300002896227,
+   "p95_ms": 0.07490124988862588,
+   "max_ms": 0.11458499989203119,
+   "errepikapenak": 1000
+  },
+  "Ridge, 306 egun (lotea)": {
+   "batezbestekoa_ms": 12.542096630013475,
+   "mediana_ms": 12.44189650003591,
+   "p95_ms": 13.23737420012776,
+   "max_ms": 13.964434999934383,
+   "errepikapenak": 100
+  },
+  "K-means, egun 1": {
+   "batezbestekoa_ms": 0.08708638099869859,
+   "mediana_ms": 0.08567800000491843,
+   "p95_ms": 0.09636800008365752,
+   "max_ms": 0.15130299993870722,
+   "errepikapenak": 1000
+  },
+  "Sistema aditua, egun 1": {
+   "batezbestekoa_ms": 0.12293578699882346,
+   "mediana_ms": 0.1219800001308613,
+   "p95_ms": 0.12927105010476225,
+   "max_ms": 0.16224099999817554,
+   "errepikapenak": 1000
+  },
+  "Kate osoa, egun 1": {
+   "batezbestekoa_ms": 0.37441202100217197,
+   "mediana_ms": 0.36505499997474544,
+   "p95_ms": 0.42376604994842637,
+   "max_ms": 0.8395899999413814,
+   "errepikapenak": 1000
+  }
+ }
+}
